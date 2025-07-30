@@ -381,13 +381,15 @@
       }
     };
 
-    let lastScanned = '';
-    let canScan = true;
-    let scanTimeout;
+let lastScanned = '';
+let canScan = true;
+let scanTimeout;
+let html5QrCode = null; // متغير عام للتحكم في الكاميرا
+const scannedCodes = new Set(); // حفظ الأكواد التي تم تسجيلها في الجلسة
 
     const showMessage = (text, isError = false, duration = 3000) => {
       clearTimeout(scanTimeout);
-
+      message.style.display = 'block'; // إجبار الرسالة على الظهور دائماً
       message.innerText = text;
       message.className = isError ? 'error show' : 'show';
 
@@ -395,15 +397,68 @@
         message.classList.remove('show');
         setTimeout(() => {
           message.style.display = 'none';
-          canScan = true;
         }, 300);
       }, duration);
     };
 
+    // دالة لإيقاف الكاميرا مع إخفاء الواجهة
+    function stopCamera() {
+      if (html5QrCode) {
+        html5QrCode.stop().catch(() => {});
+      }
+      // إخفاء واجهة الكاميرا
+      document.getElementById('reader').style.display = 'none';
+    }
+
+    // دالة لإعادة تشغيل الكاميرا مع إظهار الواجهة
+    function startCamera(callback) {
+      if (!html5QrCode) return;
+      const config = {
+        fps: 10,
+        qrbox: { width: 200, height: 200 },
+        aspectRatio: 1.0,
+        disableFlip: false
+      };
+      // إظهار واجهة الكاميرا
+      document.getElementById('reader').style.display = '';
+      Html5Qrcode.getCameras().then(devices => {
+        if (devices && devices.length) {
+          const cameraId = devices.find(device =>
+            device.label.toLowerCase().includes('back') ||
+            device.label.toLowerCase().includes('rear')
+          )?.id || devices[0].id;
+          html5QrCode.start(
+            cameraId,
+            config,
+            (decodedText) => {
+              // تحقق إذا كان الكود هو نفسه آخر كود
+              if (decodedText && decodedText === lastScanned) {
+                showMessage("✅ تم التسجيل برجاء التوجه للقاعة", false, 5000);
+                return;
+              }
+              callback(decodedText);
+            }
+          ).catch(() => {});
+        }
+      });
+    }
+
     const qrCodeSuccessCallback = (decodedText) => {
-      if (decodedText && decodedText !== lastScanned && canScan) {
+      if (!decodedText) return;
+
+      // إذا كان الكود تم تسجيله بالفعل في الجلسة
+      if (scannedCodes.has(decodedText)) {
+        showMessage("⚠️ تم تسجيل حضورك بالفعل! يرجى التوجه للقاعة وترك المجال لغيرك لمسح الكود.", false, 4000);
+        return;
+      }
+
+      if (decodedText !== lastScanned && canScan) {
         lastScanned = decodedText;
         canScan = false;
+        scannedCodes.add(decodedText); // أضف الكود للمجموعة
+
+        // أوقف الكاميرا فوراً
+        stopCamera();
 
         const formData = new FormData();
         formData.append(getFieldName(), decodedText);
@@ -416,70 +471,30 @@
           body: formData
         }).then(() => {
           try {
-            successSound.play().catch(() => {
-              // تجاهل خطأ الصوت إذا لم يكن متاحاً
-            });
-          } catch (e) {
-            // تجاهل خطأ الصوت
-          }
-          // عرض الرسالة لمدة 5 ثواني
-          showMessage(`✅ تم تسجيل الحضور بنجاح\nالكود: ${decodedText}`, false, 5000);
+            successSound.play().catch(() => {});
+          } catch (e) {}
+          // رسالة ترحيب مع الكود لمدة 5 ثواني
+          showMessage(`🎉 مرحباً بك! تم تسجيل الحضور بنجاح\nالكود: ${decodedText}`, false, 5000);
         }).catch(err => {
           console.error("فشل الإرسال:", err);
           showMessage("❌ فشل في الإرسال! تحقق من الاتصال", true, 4000);
         });
 
-        // السماح بالمسح مرة أخرى بعد 5 ثواني
+        // إعادة فتح الكاميرا بعد 5 ثواني
         setTimeout(() => {
           lastScanned = '';
+          canScan = true;
+          startCamera(qrCodeSuccessCallback);
         }, 5000);
-      } else if (decodedText && decodedText === lastScanned && !canScan) {
-        // إذا تم عمل سكان لنفس الكود مباشرة بعد تسجيله
-        showMessage("✅ تم تسجيل الحضور بنجاح، توجه إلى القاعة", false, 3000);
+      } else if (decodedText === lastScanned && !canScan) {
+        showMessage("✅ تم تسجيل حضورك بالفعل! يرجى التوجه للقاعة وترك المجال لغيرك لمسح الكود.", false, 4000);
       }
     };
 
     // إعداد الكاميرا
     const initializeCamera = () => {
-      const html5QrCode = new Html5Qrcode("reader");
-      const config = {
-        fps: 10,
-        qrbox: { width: 200, height: 200 },
-        aspectRatio: 1.0,
-        disableFlip: false
-      };
-
-      Html5Qrcode.getCameras().then(devices => {
-        if (devices && devices.length) {
-          // محاولة استخدام الكاميرا الخلفية أولاً
-          const cameraId = devices.find(device => 
-            device.label.toLowerCase().includes('back') || 
-            device.label.toLowerCase().includes('rear')
-          )?.id || devices[0].id;
-
-          html5QrCode.start(
-            cameraId,
-            config,
-            qrCodeSuccessCallback
-          ).catch(err => {
-            console.error("فشل في بدء الكاميرا:", err);
-            // محاولة استخدام الكاميرا الافتراضية
-            html5QrCode.start(
-              { facingMode: "environment" },
-              config,
-              qrCodeSuccessCallback
-            ).catch(err2 => {
-              console.error("فشل في الكاميرا الافتراضية:", err2);
-              showMessage("❌ فشل في فتح الكاميرا", true, 5000);
-            });
-          });
-        } else {
-          showMessage("❌ لا توجد كاميرات متاحة", true, 5000);
-        }
-      }).catch(err => {
-        console.error("خطأ في الحصول على الكاميرات:", err);
-        showMessage("❌ فشل في الوصول للكاميرا", true, 5000);
-      });
+      html5QrCode = new Html5Qrcode("reader");
+      startCamera(qrCodeSuccessCallback);
     };
 
     // إعدادات
