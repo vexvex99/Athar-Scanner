@@ -326,7 +326,6 @@
 </head>
 <body>
 
-  <button id="settingsBtn" title="إعدادات" aria-label="فتح الإعدادات">⚙️</button>
   
   <div class="container">
     <img src="logo.JPG" alt="شعار المؤسسة" id="logo">
@@ -341,45 +340,15 @@
 
   <audio id="success-sound" src="you.mp3" preload="auto"></audio>
 
-  <!-- نافذة الإعدادات -->
-  <div id="settingsOverlay" role="dialog" aria-labelledby="settings-title" aria-hidden="true">
-    <div class="settingsModal">
-      <h3 id="settings-title">إعدادات Google Form</h3>
-      
-      <label for="formURL">رابط الفورم:</label>
-      <input type="url" id="formURL" placeholder="https://docs.google.com/forms/d/e/...">
 
-      <label for="fieldName">رقم الـ entry:</label>
-      <input type="text" id="fieldName" placeholder="entry.1217353555">
-
-      <div class="buttonGroup">
-        <button type="button" class="save" onclick="saveSettings()">حفظ الإعدادات</button>
-        <button type="button" class="cancel" onclick="closeSettings()">إلغاء</button>
-      </div>
-    </div>
-  </div>
 
   <script>
     const message = document.getElementById('message');
     const successSound = document.getElementById('success-sound');
     const settingsOverlay = document.getElementById('settingsOverlay');
 
-    // إعدادات محفوظة أو افتراضية
-    const getFormURL = () => {
-      try {
-        return window.formURL || 'https://docs.google.com/forms/d/e/1FAIpQLSfXigHnwuKE9MX4-ZY2KnEys4QcIp2fcUl-sbx_dZWWa_ZbFQ/formResponse?';
-      } catch (e) {
-        return 'https://docs.google.com/forms/d/e/1FAIpQLSfXigHnwuKE9MX4-ZY2KnEys4QcIp2fcUl-sbx_dZWWa_ZbFQ/formResponse?';
-      }
-    };
-    
-    const getFieldName = () => {
-      try {
-        return window.fieldName || 'entry.1217353555';
-      } catch (e) {
-        return 'entry.1217353555';
-      }
-    };
+    // إعدادات ثابتة للفورم والـ entry
+    const getFormURL = () => 'https://docs.google.com/forms/d/e/1FAIpQLSfXigHnwuKE9MX4-ZY2KnEys4QcIp2fcUl-sbx_dZWWa_ZbFQ/formResponse?entry.1217353555=';
 
 let lastScanned = '';
 let canScan = true;
@@ -460,25 +429,19 @@ const scannedCodes = new Set(); // حفظ الأكواد التي تم تسجي�
         // أوقف الكاميرا فوراً
         stopCamera();
 
-        const formData = new FormData();
-        formData.append(getFieldName(), decodedText);
 
         showMessage(`⏳ جاري إرسال البيانات...`, false, 1000);
 
-        fetch(getFormURL(), {
-          method: 'POST',
-          mode: 'no-cors',
-          body: formData
-        }).then(() => {
-          try {
-            successSound.play().catch(() => {});
-          } catch (e) {}
-          // رسالة ترحيب مع الكود لمدة 5 ثواني
-          showMessage(`🎉 مرحباً بك! تم تسجيل الحضور بنجاح\nالكود: ${decodedText}`, false, 5000);
-        }).catch(err => {
-          console.error("فشل الإرسال:", err);
-          showMessage("❌ فشل في الإرسال! تحقق من الاتصال", true, 4000);
-        });
+        // بناء الرابط مع الكود
+        const url = getFormURL() + encodeURIComponent(decodedText);
+        // إرسال الطلب في الخلفية بدون نافذة منبثقة
+        fetch(url, { method: 'GET', mode: 'no-cors' });
+        console.log(`تم تسجيل الحضور للكود: ${url}`);
+        try {
+          successSound.play().catch(() => {});
+        } catch (e) {}
+        // رسالة ترحيب مع الكود لمدة 5 ثواني
+        showMessage(`🎉 مرحباً بك! تم تسجيل الحضور بنجاح\nالكود: ${decodedText}`, false, 5000);
 
         // إعادة فتح الكاميرا بعد 5 ثواني
         setTimeout(() => {
@@ -497,51 +460,7 @@ const scannedCodes = new Set(); // حفظ الأكواد التي تم تسجي�
       startCamera(qrCodeSuccessCallback);
     };
 
-    // إعدادات
-    document.getElementById('settingsBtn').onclick = () => {
-      document.getElementById('formURL').value = getFormURL();
-      document.getElementById('fieldName').value = getFieldName();
-      settingsOverlay.style.display = 'flex';
-      settingsOverlay.setAttribute('aria-hidden', 'false');
-    };
 
-    function closeSettings() {
-      settingsOverlay.style.display = 'none';
-      settingsOverlay.setAttribute('aria-hidden', 'true');
-    }
-
-    function saveSettings() {
-      const url = document.getElementById('formURL').value.trim();
-      const field = document.getElementById('fieldName').value.trim();
-
-      if (url && field) {
-        try {
-          window.formURL = url;
-          window.fieldName = field;
-          alert("✅ تم حفظ الإعدادات بنجاح");
-          closeSettings();
-        } catch (e) {
-          alert("✅ تم حفظ الإعدادات مؤقتاً");
-          closeSettings();
-        }
-      } else {
-        alert("❌ يرجى ملء جميع الحقول");
-      }
-    }
-
-    // إغلاق النافذة عند النقر خارجها
-    settingsOverlay.onclick = (e) => {
-      if (e.target === settingsOverlay) {
-        closeSettings();
-      }
-    };
-
-    // إغلاق النافذة بالضغط على ESC
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && settingsOverlay.style.display === 'flex') {
-        closeSettings();
-      }
-    });
 
     // تشغيل الكاميرا عند تحميل الصفحة
     window.addEventListener('load', () => {
