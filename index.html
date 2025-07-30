@@ -1,222 +1,357 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>تسجيل الحضور</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #eef2f3;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      position: relative;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 500px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
       text-align: center;
-      padding: 40px 20px;
     }
 
     #logo {
-      width: 140px;
-      margin-bottom: 15px;
+      width: clamp(80px, 15vw, 140px);
+      height: auto;
+      margin-bottom: 1rem;
+      border-radius: 10px;
     }
 
     h1 {
-      font-size: 28px;
-      margin-bottom: 30px;
+      font-size: clamp(1.2rem, 4vw, 1.8rem);
+      margin-bottom: 1.5rem;
       color: #333;
+      font-weight: 600;
+      line-height: 1.3;
     }
 
     #reader {
-      width: 320px;
-      height: 320px;
-      margin: 0 auto;
+      width: 100%;
+      max-width: 320px;
+      aspect-ratio: 1;
+      margin: 0 auto 1.5rem;
       border-radius: 16px;
       overflow: hidden;
       background: #fff;
       transform: scaleX(-1);
       box-shadow: 0 4px 25px rgba(0, 0, 0, 0.15);
-      border: 4px solid #ddd;
+      border: 4px solid #e0e0e0;
+      position: relative;
     }
 
     #message {
-      margin-top: 25px;
-      font-size: 20px;
+      margin-top: 1rem;
+      font-size: clamp(0.9rem, 3vw, 1.1rem);
       color: #fff;
-      padding: 12px 20px;
-      border-radius: 10px;
-      display: inline-block;
-      min-width: 280px;
-      max-width: 90%;
-      background-color: #28a745;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      transition: all 0.3s ease-in-out;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      display: none;
+      background: linear-gradient(45deg, #28a745, #20c997);
+      box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+      transition: all 0.3s ease;
+      word-break: break-word;
     }
 
     #message.error {
-      background-color: #dc3545;
+      background: linear-gradient(45deg, #dc3545, #e74c3c);
+      box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+    }
+
+    #message.show {
+      display: block;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     /* زر الإعدادات */
     #settingsBtn {
       position: fixed;
-      top: 10px;
-      left: 10px;
-      font-size: 24px;
-      cursor: pointer;
-      background: none;
+      top: 1rem;
+      left: 1rem;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.9);
       border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      z-index: 100;
+    }
+
+    #settingsBtn:hover {
+      transform: rotate(90deg) scale(1.1);
+      background: rgba(255, 255, 255, 1);
     }
 
     /* نافذة الإعدادات */
     #settingsOverlay {
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.4);
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
       display: none;
       align-items: center;
       justify-content: center;
       z-index: 1000;
+      padding: 1rem;
     }
 
     .settingsModal {
       background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      width: 90%;
+      padding: 2rem;
+      border-radius: 20px;
+      width: 100%;
       max-width: 400px;
       text-align: right;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      animation: modalSlide 0.3s ease-out;
+    }
+
+    @keyframes modalSlide {
+      from {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .settingsModal h3 {
+      margin-bottom: 1.5rem;
+      color: #333;
+      font-size: 1.3rem;
     }
 
     .settingsModal label {
-      font-weight: bold;
+      font-weight: 600;
       display: block;
-      margin-top: 10px;
+      margin-top: 1rem;
+      margin-bottom: 0.5rem;
+      color: #555;
     }
 
     .settingsModal input {
       width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
+      padding: 0.75rem;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: border-color 0.3s ease;
+    }
+
+    .settingsModal input:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    }
+
+    .buttonGroup {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 2rem;
+      justify-content: flex-start;
     }
 
     .settingsModal button {
-      margin-top: 15px;
-      padding: 8px 12px;
+      flex: 1;
+      padding: 0.75rem 1rem;
       border: none;
-      border-radius: 6px;
-      background-color: #007bff;
-      color: white;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
       cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .settingsModal button.save {
+      background: linear-gradient(45deg, #007bff, #0056b3);
+      color: white;
+    }
+
+    .settingsModal button.save:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
     }
 
     .settingsModal button.cancel {
-      background-color: #6c757d;
-      margin-left: 10px;
+      background: #f8f9fa;
+      color: #6c757d;
+      border: 2px solid #e9ecef;
     }
 
-    /* Responsive Design */
-    @media (max-width: 600px) {
+    .settingsModal button.cancel:hover {
+      background: #e9ecef;
+      transform: translateY(-2px);
+    }
+
+    /* استجابة للشاشات الصغيرة */
+    @media (max-width: 480px) {
       body {
-        padding: 15px 2px;
+        padding: 0.5rem;
       }
-      #logo {
-        width: 90px;
-        margin-bottom: 10px;
+
+      .container {
+        padding: 1.5rem;
+        border-radius: 15px;
       }
-      h1 {
-        font-size: 20px;
-        margin-bottom: 18px;
-      }
-      #reader {
-        width: 98vw;
-        max-width: 98vw;
-        height: 60vw;
-        max-height: 60vw;
-        min-width: 180px;
-        min-height: 180px;
-        border-radius: 10px;
-        border-width: 2px;
-      }
-      #message {
-        font-size: 16px;
-        min-width: 120px;
-        padding: 8px 10px;
-      }
-      .settingsModal {
-        padding: 10px;
-        max-width: 98vw;
-      }
-      .settingsModal input {
-        font-size: 14px;
-        padding: 6px;
-      }
-      .settingsModal button {
-        font-size: 14px;
-        padding: 6px 10px;
-      }
+
       #settingsBtn {
-        font-size: 20px;
-        top: 6px;
-        left: 6px;
+        width: 45px;
+        height: 45px;
+        font-size: 1.3rem;
+        top: 0.5rem;
+        left: 0.5rem;
       }
-    }
 
-    @media (min-width: 601px) and (max-width: 1024px) {
-      #reader {
-        width: 60vw;
-        max-width: 400px;
-        height: 60vw;
-        max-height: 400px;
-        min-width: 220px;
-        min-height: 220px;
-      }
-      #logo {
-        width: 110px;
-      }
-      h1 {
-        font-size: 24px;
-      }
       .settingsModal {
-        max-width: 80vw;
+        padding: 1.5rem;
+        border-radius: 15px;
+      }
+
+      .buttonGroup {
+        flex-direction: column;
+      }
+
+      .settingsModal button {
+        padding: 1rem;
       }
     }
 
-    @media (min-width: 1025px) {
+    /* استجابة للشاشات المتوسطة */
+    @media (min-width: 481px) and (max-width: 768px) {
+      .container {
+        max-width: 450px;
+      }
+
       #reader {
-        width: 320px;
-        height: 320px;
+        max-width: 280px;
       }
-      #logo {
-        width: 140px;
+    }
+
+    /* استجابة للشاشات الكبيرة */
+    @media (min-width: 769px) {
+      .container {
+        max-width: 500px;
       }
+
+      #reader {
+        max-width: 320px;
+      }
+    }
+
+    /* تحسينات إضافية للوضع الأفقي على الهواتف */
+    @media (max-height: 500px) and (orientation: landscape) {
+      body {
+        justify-content: flex-start;
+        padding-top: 1rem;
+      }
+
+      .container {
+        padding: 1rem;
+      }
+
       h1 {
-        font-size: 28px;
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
       }
+
+      #reader {
+        max-width: 250px;
+        margin-bottom: 1rem;
+      }
+    }
+
+    /* تحسين عرض الرسائل */
+    .status-indicator {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #28a745;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
     }
   </style>
 </head>
 <body>
 
-  <button id="settingsBtn" title="إعدادات">⚙️</button>
-  <img src="logo.JPG" alt="الشعار" id="logo">
-  <h1>سجّل حضورك باستخدام الكيو آر كود</h1>
-  <div id="reader"></div>
-  <div id="message" style="display: none;"></div>
+  <button id="settingsBtn" title="إعدادات" aria-label="فتح الإعدادات">⚙️</button>
+  
+  <div class="container">
+    <img src="logo.JPG" alt="شعار المؤسسة" id="logo">
+    <h1>سجّل حضورك باستخدام الكيو آر كود</h1>
+    
+    <div id="reader">
+      <div class="status-indicator"></div>
+    </div>
+    
+    <div id="message" role="alert"></div>
+  </div>
 
   <audio id="success-sound" src="you.mp3" preload="auto"></audio>
 
   <!-- نافذة الإعدادات -->
-  <div id="settingsOverlay">
+  <div id="settingsOverlay" role="dialog" aria-labelledby="settings-title" aria-hidden="true">
     <div class="settingsModal">
-      <h3>إعدادات Google Form</h3>
+      <h3 id="settings-title">إعدادات Google Form</h3>
+      
       <label for="formURL">رابط الفورم:</label>
-      <input type="text" id="formURL">
+      <input type="url" id="formURL" placeholder="https://docs.google.com/forms/d/e/...">
 
       <label for="fieldName">رقم الـ entry:</label>
-      <input type="text" id="fieldName">
+      <input type="text" id="fieldName" placeholder="entry.1234567890">
 
-      <div style="text-align: left;">
-        <button onclick="saveSettings()">حفظ</button>
-        <button class="cancel" onclick="closeSettings()">إلغاء</button>
+      <div class="buttonGroup">
+        <button type="button" class="save" onclick="saveSettings()">حفظ الإعدادات</button>
+        <button type="button" class="cancel" onclick="closeSettings()">إلغاء</button>
       </div>
     </div>
   </div>
@@ -224,18 +359,42 @@
   <script>
     const message = document.getElementById('message');
     const successSound = document.getElementById('success-sound');
+    const settingsOverlay = document.getElementById('settingsOverlay');
 
     // إعدادات محفوظة أو افتراضية
-    const getFormURL = () => localStorage.getItem('formURL') || 'https://docs.google.com/forms/d/e/1FAIpQLSfXigHnwuKE9MX4-ZY2KnEys4QcIp2fcUl-sbx_dZWWa_ZbFQ/formResponse';
-    const getFieldName = () => localStorage.getItem('fieldName') || 'entry.1217353555';
+    const getFormURL = () => {
+      try {
+        return window.formURL || 'https://docs.google.com/forms/d/e/1FAIpQLSfXigHnwuKE9MX4-ZY2KnEys4QcIp2fcUl-sbx_dZWWa_ZbFQ/formResponse';
+      } catch (e) {
+        return 'https://docs.google.com/forms/d/e/1FAIpQLSfXigHnwuKE9MX4-ZY2KnEys4QcIp2fcUl-sbx_dZWWa_ZbFQ/formResponse';
+      }
+    };
+    
+    const getFieldName = () => {
+      try {
+        return window.fieldName || 'entry.1217353555';
+      } catch (e) {
+        return 'entry.1217353555';
+      }
+    };
 
     let lastScanned = '';
     let canScan = true;
+    let scanTimeout;
 
-    const showMessage = (text, isError = false) => {
+    const showMessage = (text, isError = false, duration = 3000) => {
+      clearTimeout(scanTimeout);
+      
       message.innerText = text;
-      message.className = isError ? 'error' : '';
-      message.style.display = 'inline-block';
+      message.className = isError ? 'error show' : 'show';
+      
+      scanTimeout = setTimeout(() => {
+        message.classList.remove('show');
+        setTimeout(() => {
+          message.style.display = 'none';
+          canScan = true;
+        }, 300);
+      }, duration);
     };
 
     const qrCodeSuccessCallback = (decodedText) => {
@@ -246,56 +405,87 @@
         const formData = new FormData();
         formData.append(getFieldName(), decodedText);
 
+        showMessage(`⏳ جاري إرسال البيانات...`, false, 1000);
+
         fetch(getFormURL(), {
           method: 'POST',
           mode: 'no-cors',
           body: formData
         }).then(() => {
-          successSound.play();
-          showMessage(`✅ تم تسجيل الكود: ${decodedText}`);
+          try {
+            successSound.play().catch(() => {
+              // تجاهل خطأ الصوت إذا لم يكن متاحاً
+            });
+          } catch (e) {
+            // تجاهل خطأ الصوت
+          }
+          showMessage(`✅ تم تسجيل الحضور بنجاح\nالكود: ${decodedText}`, false, 4000);
         }).catch(err => {
           console.error("فشل الإرسال:", err);
-          showMessage("❌ فشل في الإرسال!", true);
+          showMessage("❌ فشل في الإرسال! تحقق من الاتصال", true, 4000);
         });
 
+        // السماح بالمسح مرة أخرى بعد 2 ثانية
         setTimeout(() => {
-          message.style.display = 'none';
-          canScan = true;
-        }, 3000);
+          lastScanned = '';
+        }, 2000);
       }
     };
 
-    const html5QrCode = new Html5Qrcode("reader");
-    const config = {
-      fps: 10,
-      qrbox: { width: 200, height: 200 },
-      aspectRatio: 1.0
-    };
+    // إعداد الكاميرا
+    const initializeCamera = () => {
+      const html5QrCode = new Html5Qrcode("reader");
+      const config = {
+        fps: 10,
+        qrbox: { width: 200, height: 200 },
+        aspectRatio: 1.0,
+        disableFlip: false
+      };
 
-    Html5Qrcode.getCameras().then(devices => {
-      if (devices && devices.length) {
-        html5QrCode.start(
-          { facingMode: "environment" },
-          config,
-          qrCodeSuccessCallback
-        );
-      } else {
-        showMessage("❌ لا توجد كاميرات متاحة", true);
-      }
-    }).catch(err => {
-      console.error(err);
-      showMessage("❌ فشل في فتح الكاميرا", true);
-    });
+      Html5Qrcode.getCameras().then(devices => {
+        if (devices && devices.length) {
+          // محاولة استخدام الكاميرا الخلفية أولاً
+          const cameraId = devices.find(device => 
+            device.label.toLowerCase().includes('back') || 
+            device.label.toLowerCase().includes('rear')
+          )?.id || devices[0].id;
+
+          html5QrCode.start(
+            cameraId,
+            config,
+            qrCodeSuccessCallback
+          ).catch(err => {
+            console.error("فشل في بدء الكاميرا:", err);
+            // محاولة استخدام الكاميرا الافتراضية
+            html5QrCode.start(
+              { facingMode: "environment" },
+              config,
+              qrCodeSuccessCallback
+            ).catch(err2 => {
+              console.error("فشل في الكاميرا الافتراضية:", err2);
+              showMessage("❌ فشل في فتح الكاميرا", true, 5000);
+            });
+          });
+        } else {
+          showMessage("❌ لا توجد كاميرات متاحة", true, 5000);
+        }
+      }).catch(err => {
+        console.error("خطأ في الحصول على الكاميرات:", err);
+        showMessage("❌ فشل في الوصول للكاميرا", true, 5000);
+      });
+    };
 
     // إعدادات
     document.getElementById('settingsBtn').onclick = () => {
       document.getElementById('formURL').value = getFormURL();
       document.getElementById('fieldName').value = getFieldName();
-      document.getElementById('settingsOverlay').style.display = 'flex';
+      settingsOverlay.style.display = 'flex';
+      settingsOverlay.setAttribute('aria-hidden', 'false');
     };
 
     function closeSettings() {
-      document.getElementById('settingsOverlay').style.display = 'none';
+      settingsOverlay.style.display = 'none';
+      settingsOverlay.setAttribute('aria-hidden', 'true');
     }
 
     function saveSettings() {
@@ -303,14 +493,48 @@
       const field = document.getElementById('fieldName').value.trim();
 
       if (url && field) {
-        localStorage.setItem('formURL', url);
-        localStorage.setItem('fieldName', field);
-        alert("✅ تم حفظ الإعدادات");
-        closeSettings();
+        try {
+          window.formURL = url;
+          window.fieldName = field;
+          alert("✅ تم حفظ الإعدادات بنجاح");
+          closeSettings();
+        } catch (e) {
+          alert("✅ تم حفظ الإعدادات مؤقتاً");
+          closeSettings();
+        }
       } else {
-        alert("❌ يرجى ملء الحقول");
+        alert("❌ يرجى ملء جميع الحقول");
       }
     }
+
+    // إغلاق النافذة عند النقر خارجها
+    settingsOverlay.onclick = (e) => {
+      if (e.target === settingsOverlay) {
+        closeSettings();
+      }
+    };
+
+    // إغلاق النافذة بالضغط على ESC
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && settingsOverlay.style.display === 'flex') {
+        closeSettings();
+      }
+    });
+
+    // تشغيل الكاميرا عند تحميل الصفحة
+    window.addEventListener('load', () => {
+      setTimeout(initializeCamera, 500);
+    });
+
+    // إعادة تشغيل الكاميرا عند العودة للصفحة
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        setTimeout(() => {
+          canScan = true;
+          lastScanned = '';
+        }, 1000);
+      }
+    });
   </script>
 
 </body>
