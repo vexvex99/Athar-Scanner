@@ -112,6 +112,86 @@
       background-color: #6c757d;
       margin-left: 10px;
     }
+
+    /* Responsive Design */
+    @media (max-width: 600px) {
+      body {
+        padding: 15px 2px;
+      }
+      #logo {
+        width: 90px;
+        margin-bottom: 10px;
+      }
+      h1 {
+        font-size: 20px;
+        margin-bottom: 18px;
+      }
+      #reader {
+        width: 98vw;
+        max-width: 98vw;
+        height: 60vw;
+        max-height: 60vw;
+        min-width: 180px;
+        min-height: 180px;
+        border-radius: 10px;
+        border-width: 2px;
+      }
+      #message {
+        font-size: 16px;
+        min-width: 120px;
+        padding: 8px 10px;
+      }
+      .settingsModal {
+        padding: 10px;
+        max-width: 98vw;
+      }
+      .settingsModal input {
+        font-size: 14px;
+        padding: 6px;
+      }
+      .settingsModal button {
+        font-size: 14px;
+        padding: 6px 10px;
+      }
+      #settingsBtn {
+        font-size: 20px;
+        top: 6px;
+        left: 6px;
+      }
+    }
+
+    @media (min-width: 601px) and (max-width: 1024px) {
+      #reader {
+        width: 60vw;
+        max-width: 400px;
+        height: 60vw;
+        max-height: 400px;
+        min-width: 220px;
+        min-height: 220px;
+      }
+      #logo {
+        width: 110px;
+      }
+      h1 {
+        font-size: 24px;
+      }
+      .settingsModal {
+        max-width: 80vw;
+      }
+    }
+
+    @media (min-width: 1025px) {
+      #reader {
+        width: 320px;
+        height: 320px;
+      }
+      #logo {
+        width: 140px;
+      }
+      h1 {
+        font-size: 28px;
+      }
+    }
   </style>
 </head>
 <body>
