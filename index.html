@@ -57,10 +57,14 @@
       border-radius: 16px;
       overflow: hidden;
       background: #fff;
-      transform: scaleX(-1);
       box-shadow: 0 4px 25px rgba(0, 0, 0, 0.15);
       border: 4px solid #e0e0e0;
       position: relative;
+    }
+
+    /* Mirror the video inside the reader */
+    #reader video {
+      /* transform: scaleX(-1); */ /* احذف أو عطل هذا السطر ليظهر الفيديو طبيعي */
     }
 
     #message {
@@ -346,7 +350,7 @@
       <input type="url" id="formURL" placeholder="https://docs.google.com/forms/d/e/...">
 
       <label for="fieldName">رقم الـ entry:</label>
-      <input type="text" id="fieldName" placeholder="entry.1234567890">
+      <input type="text" id="fieldName" placeholder="entry.1217353555">
 
       <div class="buttonGroup">
         <button type="button" class="save" onclick="saveSettings()">حفظ الإعدادات</button>
@@ -383,10 +387,10 @@
 
     const showMessage = (text, isError = false, duration = 3000) => {
       clearTimeout(scanTimeout);
-      
+
       message.innerText = text;
       message.className = isError ? 'error show' : 'show';
-      
+
       scanTimeout = setTimeout(() => {
         message.classList.remove('show');
         setTimeout(() => {
@@ -418,16 +422,20 @@
           } catch (e) {
             // تجاهل خطأ الصوت
           }
-          showMessage(`✅ تم تسجيل الحضور بنجاح\nالكود: ${decodedText}`, false, 4000);
+          // عرض الرسالة لمدة 5 ثواني
+          showMessage(`✅ تم تسجيل الحضور بنجاح\nالكود: ${decodedText}`, false, 5000);
         }).catch(err => {
           console.error("فشل الإرسال:", err);
           showMessage("❌ فشل في الإرسال! تحقق من الاتصال", true, 4000);
         });
 
-        // السماح بالمسح مرة أخرى بعد 2 ثانية
+        // السماح بالمسح مرة أخرى بعد 5 ثواني
         setTimeout(() => {
           lastScanned = '';
-        }, 2000);
+        }, 5000);
+      } else if (decodedText && decodedText === lastScanned && !canScan) {
+        // إذا تم عمل سكان لنفس الكود مباشرة بعد تسجيله
+        showMessage("✅ تم تسجيل الحضور بنجاح، توجه إلى القاعة", false, 3000);
       }
     };
 
