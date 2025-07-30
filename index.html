@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>تسجيل الحضور</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #eef2f3;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    #logo {
+      width: 140px;
+      margin-bottom: 15px;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 30px;
+      color: #333;
+    }
+
+    #reader {
+      width: 320px;
+      height: 320px;
+      margin: 0 auto;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #fff;
+      transform: scaleX(-1);
+      box-shadow: 0 4px 25px rgba(0, 0, 0, 0.15);
+      border: 4px solid #ddd;
+    }
+
+    #message {
+      margin-top: 25px;
+      font-size: 20px;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 10px;
+      display: inline-block;
+      min-width: 280px;
+      max-width: 90%;
+      background-color: #28a745;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease-in-out;
+    }
+
+    #message.error {
+      background-color: #dc3545;
+    }
+
+    /* زر الإعدادات */
+    #settingsBtn {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      font-size: 24px;
+      cursor: pointer;
+      background: none;
+      border: none;
+    }
+
+    /* نافذة الإعدادات */
+    #settingsOverlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .settingsModal {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+      text-align: right;
+    }
+
+    .settingsModal label {
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+    }
+
+    .settingsModal input {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    .settingsModal button {
+      margin-top: 15px;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+
+    .settingsModal button.cancel {
+      background-color: #6c757d;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <button id="settingsBtn" title="إعدادات">⚙️</button>
+  <img src="logo.JPG" alt="الشعار" id="logo">
+  <h1>سجّل حضورك باستخدام الكيو آر كود</h1>
+  <div id="reader"></div>
+  <div id="message" style="display: none;"></div>
+
+  <audio id="success-sound" src="you.mp3" preload="auto"></audio>
+
+  <!-- نافذة الإعدادات -->
+  <div id="settingsOverlay">
+    <div class="settingsModal">
+      <h3>إعدادات Google Form</h3>
+      <label for="formURL">رابط الفورم:</label>
+      <input type="text" id="formURL">
+
+      <label for="fieldName">رقم الـ entry:</label>
+      <input type="text" id="fieldName">
+
+      <div style="text-align: left;">
+        <button onclick="saveSettings()">حفظ</button>
+        <button class="cancel" onclick="closeSettings()">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const message = document.getElementById('message');
+    const successSound = document.getElementById('success-sound');
+
+    // إعدادات محفوظة أو افتراضية
+    const getFormURL = () => localStorage.getItem('formURL') || 'https://docs.google.com/forms/d/e/1FAIpQLSfXigHnwuKE9MX4-ZY2KnEys4QcIp2fcUl-sbx_dZWWa_ZbFQ/formResponse';
+    const getFieldName = () => localStorage.getItem('fieldName') || 'entry.1217353555';
+
+    let lastScanned = '';
+    let canScan = true;
+
+    const showMessage = (text, isError = false) => {
+      message.innerText = text;
+      message.className = isError ? 'error' : '';
+      message.style.display = 'inline-block';
+    };
+
+    const qrCodeSuccessCallback = (decodedText) => {
+      if (decodedText && decodedText !== lastScanned && canScan) {
+        lastScanned = decodedText;
+        canScan = false;
+
+        const formData = new FormData();
+        formData.append(getFieldName(), decodedText);
+
+        fetch(getFormURL(), {
+          method: 'POST',
+          mode: 'no-cors',
+          body: formData
+        }).then(() => {
+          successSound.play();
+          showMessage(`✅ تم تسجيل الكود: ${decodedText}`);
+        }).catch(err => {
+          console.error("فشل الإرسال:", err);
+          showMessage("❌ فشل في الإرسال!", true);
+        });
+
+        setTimeout(() => {
+          message.style.display = 'none';
+          canScan = true;
+        }, 3000);
+      }
+    };
+
+    const html5QrCode = new Html5Qrcode("reader");
+    const config = {
+      fps: 10,
+      qrbox: { width: 200, height: 200 },
+      aspectRatio: 1.0
+    };
+
+    Html5Qrcode.getCameras().then(devices => {
+      if (devices && devices.length) {
+        html5QrCode.start(
+          { facingMode: "environment" },
+          config,
+          qrCodeSuccessCallback
+        );
+      } else {
+        showMessage("❌ لا توجد كاميرات متاحة", true);
+      }
+    }).catch(err => {
+      console.error(err);
+      showMessage("❌ فشل في فتح الكاميرا", true);
+    });
+
+    // إعدادات
+    document.getElementById('settingsBtn').onclick = () => {
+      document.getElementById('formURL').value = getFormURL();
+      document.getElementById('fieldName').value = getFieldName();
+      document.getElementById('settingsOverlay').style.display = 'flex';
+    };
+
+    function closeSettings() {
+      document.getElementById('settingsOverlay').style.display = 'none';
+    }
+
+    function saveSettings() {
+      const url = document.getElementById('formURL').value.trim();
+      const field = document.getElementById('fieldName').value.trim();
+
+      if (url && field) {
+        localStorage.setItem('formURL', url);
+        localStorage.setItem('fieldName', field);
+        alert("✅ تم حفظ الإعدادات");
+        closeSettings();
+      } else {
+        alert("❌ يرجى ملء الحقول");
+      }
+    }
+  </script>
+
+</body>
+</html>
