@@ -347,8 +347,8 @@
     const successSound = document.getElementById('success-sound');
     const settingsOverlay = document.getElementById('settingsOverlay');
 
-  // إعدادات ثابتة للفورم والـ entry
-  const getFormURL = () => 'https://docs.google.com/forms/d/e/1FAIpQLSfB7FDeyAMlSNN-OHuuD9Fsxsh5opDOdT9vEivWvfe1LlK2DA/viewform?usp=pp_url&entry.1999451295=';
+    // إعدادات ثابتة للفورم والـ entry
+    const getFormURL = () => 'https://docs.google.com/forms/d/e/1FAIpQLSfXigHnwuKE9MX4-ZY2KnEys4QcIp2fcUl-sbx_dZWWa_ZbFQ/formResponse?entry.1217353555=';
 
 let lastScanned = '';
 let canScan = true;
@@ -433,10 +433,10 @@ const scannedCodes = new Set(); // حفظ الأكواد التي تم تسجي�
         showMessage(`⏳ جاري إرسال البيانات...`, false, 1000);
 
         // بناء الرابط مع الكود
-        const url = getFormURL() + encodeURIComponent(decodedText);
-        // إرسال الطلب في الخلفية بدون نافذة منبثقة
-        fetch(url, { method: 'GET', mode: 'no-cors' });
-        console.log(`تم تسجيل الحضور للكود: ${url}`);
+  const url = getFormURL() + encodeURIComponent(decodedText);
+  // إرسال الطلب في الخلفية بدون نافذة منبثقة
+  fetch(url, { method: 'GET', mode: 'no-cors' });
+  console.log(`تم تسجيل الحضور للكود: ${url}`);
         try {
           successSound.play().catch(() => {});
         } catch (e) {}
